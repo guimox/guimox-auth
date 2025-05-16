@@ -1,0 +1,18 @@
+meta {
+  name: verify
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/auth/verify
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "guilhermxlopes@gmail.com",
+    "verificationCode": "929522"
+  }
+}
