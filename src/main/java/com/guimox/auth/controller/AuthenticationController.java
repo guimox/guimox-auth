@@ -1,9 +1,9 @@
 package com.guimox.auth.controller;
 
-import com.guimox.auth.dto.LoginUserDto;
-import com.guimox.auth.dto.RefreshTokenRequestDto;
-import com.guimox.auth.dto.RegisterUserDto;
-import com.guimox.auth.dto.VerifyUserDto;
+import com.guimox.auth.dto.request.LoginUserRequestDto;
+import com.guimox.auth.dto.request.RefreshTokenRequestDto;
+import com.guimox.auth.dto.request.RegisterUserRequestDto;
+import com.guimox.auth.dto.request.VerifyUserRequestDto;
 import com.guimox.auth.model.User;
 import com.guimox.auth.responses.LoginResponse;
 import com.guimox.auth.responses.TokenRefreshResponse;
@@ -23,32 +23,34 @@ public class AuthenticationController {
         this.authenticationService = authenticationService;
     }
 
+    @GetMapping("/grantcode")
+    public String grantCode(@RequestParam("code") String code, @RequestParam("scope") String scope, @RequestParam("authuser") String authUser, @RequestParam("prompt") String prompt, @RequestParam String state) {
+        String appCode = state.split(":")[1]; //
+        return authenticationService.processGrantCode(code, appCode);
+    }
+
     @PostMapping("/signup")
-    public ResponseEntity<User> register(@RequestBody RegisterUserDto registerUserDto) {
-        User registeredUser = authenticationService.signup(registerUserDto);
+    public ResponseEntity<String> register(@RequestBody RegisterUserRequestDto registerUserRequestDto) {
+        String registeredUser = authenticationService.signup(registerUserRequestDto);
         return ResponseEntity.ok(registeredUser);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserDto loginUserDto) {
-        User authenticatedUser = authenticationService.authenticate(loginUserDto);
+    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserRequestDto loginUserRequestDto) {
+        User authenticatedUser = authenticationService.authenticate(loginUserRequestDto);
 
         String accessToken = jwtService.generateToken(authenticatedUser);
         String refreshToken = jwtService.generateRefreshToken(authenticatedUser);
 
-        LoginResponse loginResponse = new LoginResponse(
-                accessToken,
-                jwtService.getAccessTokenExpirationTime(),
-                refreshToken
-        );
+        LoginResponse loginResponse = new LoginResponse(accessToken, jwtService.getAccessTokenExpirationTime(), refreshToken);
 
         return ResponseEntity.ok(loginResponse);
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<String> verifyUser(@RequestBody VerifyUserDto verifyUserDto) {
+    public ResponseEntity<String> verifyUser(@RequestBody VerifyUserRequestDto verifyUserRequestDto) {
         try {
-            authenticationService.verifyUser(verifyUserDto);
+            authenticationService.verifyUser(verifyUserRequestDto);
             return ResponseEntity.ok("Account verified successfully");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

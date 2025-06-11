@@ -1,11 +1,11 @@
-package com.guimox.auth.dto;
+package com.guimox.auth.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class VerifyUserDto {
+public class VerifyUserRequestDto {
     private String email;
     private String verificationCode;
 

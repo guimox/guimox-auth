@@ -1,4 +1,4 @@
-package com.guimox.auth.dto;
+package com.guimox.auth.dto.request;
 
 public class RefreshTokenRequestDto {
     private String refreshToken;

@@ -1,5 +1,7 @@
-# application.yml
 spring:
+  oauth2:
+    client-id: id
+    client-secret: secret
   datasource:
     url: jdbc:postgresql://localhost:5433/auth-db
     username: postgres
@@ -23,26 +25,19 @@ spring:
             scope:
               - email
               - profile
-
-# JWT Configuration
 app:
   jwt:
-    secret: abef8059200fa75c588dad0adf51ae2e02366b288f20cf23aa98285168995c4cb4fd5cb0b1baf14a3cc4535607d0db252d37ceaaa88258d57f8000881befd4fd0e1eac9b546124d90317c5d3a140dfcd56df03e03d27d40a7e165a58ed53b2633f977058d0884404e657c7b8d41ab8eb280c8160d278851682095e9e190dbf0671aa5ff6e433b1c93240a9f0c01a133c9ec4a1fb69ce8069e9fb51c91d3a989b1b3660e805c7559ab23432f252cd50cf60822cd28abe3c5b7eda9e7a1678d23e5dd85e55bb38e89280f9b37c851bc595e9cf6a63059139daf0dd0e92acfbd4969e2185940a374539fcc34f4e9650eb5ba3c35c988881bc1a9e630adfa76fc39d
+    secret: jwt-secret
     access-token-expiration-ms: 86400000  # 24 hours
     refresh-token-expiration-ms: 86400000  # 24 hours
     token-version-header: X-Token-Version
   resend:
-    api-key: re_3jjstkiR_JzLfGyBzMgWe7vD1yfaFQobL
-    from-email: auth@guimox.dev
-
+    api-key: resend-api-key
+    from-email: email
 server:
   port: 8080
-
-# Enable HTTP 401 instead of redirect to login page
 security:
   filter-dispatch-types: REQUEST
-
-# Logging
 logging:
   level:
     org.springframework.security: DEBUG

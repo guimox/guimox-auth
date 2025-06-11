@@ -1,11 +1,11 @@
-package com.guimox.auth.dto;
+package com.guimox.auth.dto.response;
 
-public class LoginResponse {
+public class LoginResponseDto {
     private String accessToken;
     private long expiresIn;
     private String refreshToken;
 
-    public LoginResponse(String accessToken, long expiresIn, String refreshToken) {
+    public LoginResponseDto(String accessToken, long expiresIn, String refreshToken) {
         this.accessToken = accessToken;
         this.expiresIn = expiresIn;
         this.refreshToken = refreshToken;

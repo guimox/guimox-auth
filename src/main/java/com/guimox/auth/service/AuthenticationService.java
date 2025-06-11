@@ -1,11 +1,17 @@
 package com.guimox.auth.service;
 
-import com.guimox.auth.dto.LoginUserDto;
-import com.guimox.auth.dto.RegisterUserDto;
-import com.guimox.auth.dto.VerifyUserDto;
+import com.guimox.auth.dto.oauth2.GoogleUser;
+import com.guimox.auth.dto.request.LoginUserRequestDto;
+import com.guimox.auth.dto.request.RegisterUserRequestDto;
+import com.guimox.auth.dto.request.VerifyUserRequestDto;
+import com.guimox.auth.dto.response.LoginResponseDto;
+import com.guimox.auth.model.App;
 import com.guimox.auth.model.User;
+import com.guimox.auth.model.Verification;
+import com.guimox.auth.repository.AppRepository;
 import com.guimox.auth.repository.UserRepository;
-import jakarta.mail.MessagingException;
+import com.guimox.auth.repository.VerificationRepository;
+import com.nimbusds.jose.shaded.gson.JsonObject;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,33 +23,49 @@ import java.util.Random;
 
 @Service
 public class AuthenticationService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final AppRepository appRepository;
     private final EmailService emailService;
+    private final OAuth2Service oAuth2Service;
+    private final VerificationRepository verificationRepository;
 
     public AuthenticationService(
             UserRepository userRepository,
             AuthenticationManager authenticationManager,
-            PasswordEncoder passwordEncoder,
-            EmailService emailService
+            PasswordEncoder passwordEncoder, AppRepository appRepository,
+            EmailService emailService, OAuth2Service oAuth2Service, VerificationRepository verificationRepository
     ) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.appRepository = appRepository;
         this.emailService = emailService;
+        this.oAuth2Service = oAuth2Service;
+        this.verificationRepository = verificationRepository;
     }
 
-    public User signup(RegisterUserDto input) {
-        User user = new User(input.getUsername(), input.getEmail(), passwordEncoder.encode(input.getPassword()));
-        user.setVerificationCode(generateVerificationCode());
-        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
-        user.setEnabled(false);
-        sendVerificationEmail(user);
-        return userRepository.save(user);
+    public String signup(RegisterUserRequestDto input) {
+        App app = appRepository.findByName(input.getApp())
+                .orElseThrow(() -> new RuntimeException("App does not exist"));
+
+        User user = new User.Builder()
+                .email(input.getEmail())
+                .password(passwordEncoder.encode(input.getPassword()))
+                .enabled(false)
+                .addApp(app)
+                .build();
+
+        User savedUser = userRepository.save(user);
+        sendVerificationEmail(user.getEmail(), generateVerificationCode(), input.getApp());
+
+        return "Email sent for verification";
     }
 
-    public User authenticate(LoginUserDto input) {
+
+    public User authenticate(LoginUserRequestDto input) {
         User user = userRepository.findByEmail(input.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -60,7 +82,7 @@ public class AuthenticationService {
         return user;
     }
 
-    public void verifyUser(VerifyUserDto input) {
+    public void verifyUser(VerifyUserRequestDto input) {
         Optional<User> optionalUser = userRepository.findByEmail(input.getEmail());
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
@@ -80,27 +102,49 @@ public class AuthenticationService {
         }
     }
 
-    public void resendVerificationCode(String email) {
+    public String processGrantCode(String code, String appCodeString) {
+        App appCode = appRepository.findByName(appCodeString)
+                .orElseThrow(() -> new RuntimeException("App does not exist"));
+
+        String accessToken = oAuth2Service.getOauthAccessTokenGoogle(code);
+
+        GoogleUser googleUser = oAuth2Service.getProfileDetailsGoogle(accessToken);
+
+        User user = new User.Builder()
+                .email(googleUser.getEmail())
+                .password(null)
+                .addApp(appCode)
+                .build();
+
+        String generatedCode = generateVerificationCode();
+        User savedUser = userRepository.save(user);
+        Verification verification = new Verification(generatedCode, user.getEmail(), LocalDateTime.now().plusHours(1));
+        verificationRepository.save(verification);
+        sendVerificationEmail(savedUser.getEmail(), generatedCode, appCodeString);
+
+        return "worked";
+    }
+
+    public void resendVerificationCode(String email, String appCodeString) {
         Optional<User> optionalUser = userRepository.findByEmail(email);
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             if (user.isEnabled()) {
                 throw new RuntimeException("Account is already verified");
             }
-            user.setVerificationCode(generateVerificationCode());
-            user.setVerificationCodeExpiresAt(LocalDateTime.now().plusHours(1));
-            sendVerificationEmail(user);
-            userRepository.save(user);
+            Verification verification = new Verification(generateVerificationCode(), user.getEmail(), LocalDateTime.now().plusHours(1));
+            sendVerificationEmail(email, verification.getCode(), appCodeString);
+            verificationRepository.save(verification);
         } else {
             throw new RuntimeException("User not found");
         }
     }
 
-    private void sendVerificationEmail(User user) { //TODO: Update with company logo
+    private void sendVerificationEmail(String userEmail, String code, String appCode) {
         String subject = "Account Verification";
-        String verificationCode = "VERIFICATION CODE " + user.getVerificationCode();
+        String verificationCode = "VERIFICATION " + appCode + " " + code;
         String htmlMessage = "<html>"
-                + "<body style=\"font-family: Arial, sans-serif;\">"
+                + "<body style=\"font-family: Arial, sans-serif; max-width: 450px;\">"
                 + "<div style=\"background-color: #f5f5f5; padding: 20px;\">"
                 + "<h2 style=\"color: #333;\">Welcome to our app!</h2>"
                 + "<p style=\"font-size: 16px;\">Please enter the verification code below to continue:</p>"
@@ -112,7 +156,7 @@ public class AuthenticationService {
                 + "</body>"
                 + "</html>";
 
-        emailService.sendVerificationEmail(user.getEmail(), subject, htmlMessage);
+        emailService.sendVerificationEmail(userEmail, subject, htmlMessage);
     }
 
     public User findUserByEmail(String email) {
