@@ -60,7 +60,7 @@ public class AuthenticationController {
     @PostMapping("/resend")
     public ResponseEntity<String> resendVerificationCode(@RequestParam String email) {
         try {
-            authenticationService.resendVerificationCode(email);
+            authenticationService.resendVerificationCode(email, "testing");
             return ResponseEntity.ok("Verification code sent");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

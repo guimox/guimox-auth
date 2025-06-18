@@ -1,5 +1,6 @@
 package com.guimox.auth.controller;
 
+import com.guimox.auth.dto.response.UserDTO;
 import com.guimox.auth.model.User;
 import com.guimox.auth.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import java.util.List;
 @RequestMapping("/users")
 @RestController
 public class UserController {
+
     private final UserService userService;
     public UserController(UserService userService) {
         this.userService = userService;
@@ -26,9 +28,13 @@ public class UserController {
         return ResponseEntity.ok(currentUser);
     }
 
-    @GetMapping("/")
-    public ResponseEntity<List<User>> allUsers() {
-        List <User> users = userService.allUsers();
-        return ResponseEntity.ok(users);
+    @GetMapping("")
+    public ResponseEntity<List<UserDTO>> allUsers() {
+        List<UserDTO> userDTOs = userService.allUsers()
+                .stream()
+                .map(UserDTO::new)
+                .toList();
+        return ResponseEntity.ok(userDTOs);
     }
+
 }

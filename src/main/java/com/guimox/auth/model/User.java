@@ -1,6 +1,7 @@
 package com.guimox.auth.model;
 
 import jakarta.persistence.*;
+import net.minidev.json.annotate.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

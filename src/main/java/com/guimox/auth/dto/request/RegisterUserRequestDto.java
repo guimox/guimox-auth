@@ -1,11 +1,5 @@
 package com.guimox.auth.dto.request;
 
-import com.guimox.auth.model.App;
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
 public class RegisterUserRequestDto {
     private String email;
     private String password;
