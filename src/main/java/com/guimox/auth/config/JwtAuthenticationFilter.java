@@ -10,7 +10,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -21,13 +20,12 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final HandlerExceptionResolver handlerExceptionResolver;
-
     private final JwtService jwtService;
-    private final UserDetailsService userDetailsService;
+    private final CustomUserDetailsService userDetailsService;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
-            UserDetailsService userDetailsService,
+            CustomUserDetailsService userDetailsService,
             HandlerExceptionResolver handlerExceptionResolver
     ) {
         this.jwtService = jwtService;
@@ -74,5 +72,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             handlerExceptionResolver.resolveException(request, response, null, exception);
         }
     }
-
 }
