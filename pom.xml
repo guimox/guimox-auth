@@ -16,13 +16,25 @@
 			</properties>
 		</profile>
 		<profile>
-			<id>local</id>
+			<id>hlg</id>
 			<properties>
-				<activatedProperties>local</activatedProperties>
+				<activatedProperties>dev</activatedProperties>
+			</properties>
+		</profile>
+		<profile>
+			<id>hlg</id>
+			<properties>
+				<activatedProperties>hlg</activatedProperties>
 			</properties>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
+		</profile>
+		<profile>
+			<id>local</id>
+			<properties>
+				<activatedProperties>local</activatedProperties>
+			</properties>
 		</profile>
 	</profiles>
 	<groupId>com.example</groupId>

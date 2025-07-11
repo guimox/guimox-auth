@@ -64,3 +64,4 @@ Thumbs.db
 
 ### files
 /src/main/resources/application-prd.yml
+/src/main/resources/application-hlg.yml
