@@ -21,7 +21,7 @@ jobs:
           java-version: 17
 
       - name: Build the App
-        run: mvn clean package --file pom.xml
+        run: mvn clean package -Pprd --file pom.xml
 
       - name: Set up Docker Buildx
         run: |
