@@ -16,7 +16,7 @@
 			</properties>
 		</profile>
 		<profile>
-			<id>hlg</id>
+			<id>dev</id>
 			<properties>
 				<activatedProperties>dev</activatedProperties>
 			</properties>
