@@ -67,7 +67,7 @@ jobs:
             docker run -d \
               --name "${{ secrets.DOCKER_CONTAINER_NAME }}" \
               --restart unless-stopped \
-              -p 8081:8081 \
+              -p 8087:8087 \
               -e POSTGRES_DB="${{ secrets.POSTGRES_DB }}" \
               -e POSTGRES_USER="${{ secrets.POSTGRES_USER }}" \
               -e POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}" \
