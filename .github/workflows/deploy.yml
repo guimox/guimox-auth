@@ -73,5 +73,5 @@ jobs:
               -e GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}" \
               -e JWT_SECRET="${{ secrets.JWT_SECRET }}" \
               -e RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
-              -e RESEND_FROM_EMAIL="${{ secrets.RESEND_FROM_EMAIL }}" \
+              -e RESEND_EMAIL="${{ secrets.RESEND_EMAIL }}" \
               ghcr.io/${{ github.repository }}/${{ secrets.DOCKER_CONTAINER_NAME }}:v1.0.0
