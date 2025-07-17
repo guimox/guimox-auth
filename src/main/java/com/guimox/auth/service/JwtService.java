@@ -7,7 +7,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
@@ -15,10 +15,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-@Service
+@Component
 public class JwtService {
 
-    @Value("${app.jwt.secret}")
+    @Value("${app.jwt.secret:12390120test1239120}")
     private String secretKey;
 
     @Value("${app.jwt.access-token-expiration-ms}")
@@ -47,7 +47,6 @@ public class JwtService {
     public String generateRefreshToken(UserDetails userDetails) {
         return buildToken(new HashMap<>(), userDetails, refreshTokenExpiration);
     }
-
 
     public long getAccessTokenExpirationTime() {
         return accessTokenExpiration;

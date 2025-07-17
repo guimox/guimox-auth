@@ -17,6 +17,7 @@ public class OAuth2Service {
 
     @Value("${spring.oauth2.client-id}")
     private String clientId;
+
     @Value("${spring.oauth2.client-secret}")
     private String clientSecret;
 
