@@ -9,6 +9,7 @@ import com.guimox.auth.responses.LoginResponse;
 import com.guimox.auth.responses.TokenRefreshResponse;
 import com.guimox.auth.service.AuthenticationService;
 import com.guimox.auth.service.JwtService;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,13 +48,22 @@ public class AuthenticationController {
         return ResponseEntity.ok(loginResponse);
     }
 
-    @PostMapping("/verify")
-    public ResponseEntity<String> verifyUser(@RequestBody VerifyUserRequestDto verifyUserRequestDto) {
+    @GetMapping("/verify")
+    public ResponseEntity<String> verifyUser(
+            @RequestParam String token,
+            @RequestParam String email) {
         try {
-            authenticationService.verifyUser(verifyUserRequestDto);
-            return ResponseEntity.ok("Account verified successfully");
+            authenticationService.verifyUser(token, email);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body("<html><body><h2>Account verified successfully!</h2>" +
+                            "<p>You can now close this window and log in.</p></body></html>");
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body("<html><body><h2>Verification failed</h2>" +
+                            "<p>" + e.getMessage() + "</p></body></html>");
         }
     }
 

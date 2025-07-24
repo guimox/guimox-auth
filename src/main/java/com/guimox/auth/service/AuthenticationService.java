@@ -3,7 +3,6 @@ package com.guimox.auth.service;
 import com.guimox.auth.dto.oauth2.GoogleUser;
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
-import com.guimox.auth.dto.request.VerifyUserRequestDto;
 import com.guimox.auth.model.App;
 import com.guimox.auth.model.User;
 import com.guimox.auth.model.Verification;
@@ -80,24 +79,45 @@ public class AuthenticationService {
         return user;
     }
 
-    public void verifyUser(VerifyUserRequestDto input) {
-        Optional<User> optionalUser = userRepository.findByEmail(input.getEmail());
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Verification code has expired");
-            }
-            if (user.getVerificationCode().equals(input.getVerificationCode())) {
-                user.setEnabled(true);
-                user.setVerificationCode(null);
-                user.setVerificationCodeExpiresAt(null);
-                userRepository.save(user);
-            } else {
-                throw new RuntimeException("Invalid verification code");
-            }
-        } else {
-            throw new RuntimeException("User not found");
+    public void verifyUser(String token, String email) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new RuntimeException("Verification token is required");
         }
+        if (email == null || email.trim().isEmpty()) {
+            throw new RuntimeException("Email is required");
+        }
+
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            throw new RuntimeException("Invalid verification link");
+        }
+
+        User user = optionalUser.get();
+
+        if (user.isEnabled()) {
+            throw new RuntimeException("Account is already verified");
+        }
+
+        if (user.getVerificationCode() == null) {
+            throw new RuntimeException("No pending verification for this account");
+        }
+
+        if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
+            // Clean up expired token
+            user.setVerificationCode(null);
+            user.setVerificationCodeExpiresAt(null);
+            userRepository.save(user);
+            throw new RuntimeException("Verification link has expired. Please request a new one");
+        }
+
+        if (!user.getVerificationCode().equals(token)) {
+            throw new RuntimeException("Invalid verification link");
+        }
+
+        user.setEnabled(true);
+        user.setVerificationCode(null);
+        user.setVerificationCodeExpiresAt(null);
+        userRepository.save(user);
     }
 
     public String processGrantCode(String code, String appCodeString) {
