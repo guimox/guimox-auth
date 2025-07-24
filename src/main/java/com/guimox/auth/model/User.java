@@ -1,7 +1,6 @@
 package com.guimox.auth.model;
 
 import jakarta.persistence.*;
-import net.minidev.json.annotate.JsonIgnore;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -45,6 +44,8 @@ public class User implements UserDetails {
         this.id = builder.id;
         this.email = builder.email;
         this.password = builder.password;
+        this.verificationCode = builder.verificationCode;
+        this.verificationCodeExpiresAt = builder.verificationCodeExpiresAt;  // Add this line
         this.enabled = builder.enabled;
         this.apps = builder.apps;
     }
@@ -106,6 +107,8 @@ public class User implements UserDetails {
         private Long id;
         private String email;
         private String password;
+        private String verificationCode;
+        private LocalDateTime verificationCodeExpiresAt;
         private boolean enabled;
         private Set<App> apps;
 
@@ -124,12 +127,18 @@ public class User implements UserDetails {
             return this;
         }
 
+        public Builder verificationCodeExpiresAt(LocalDateTime expiresAt) {
+            this.verificationCodeExpiresAt = expiresAt;
+            return this;
+        }
+
         public Builder password(String password) {
             this.password = password;
             return this;
         }
 
-        public Builder verificationCode(String code) {
+        public Builder verificationCode(String verificationCode) {
+            this.verificationCode = verificationCode;
             return this;
         }
 

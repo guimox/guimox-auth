@@ -14,6 +14,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
@@ -48,19 +50,22 @@ public class AuthenticationService {
         App app = appRepository.findByName(input.getApp())
                 .orElseThrow(() -> new RuntimeException("App does not exist"));
 
+        String generatedRegisterCode = generateVerificationCode();
+
         User user = new User.Builder()
                 .email(input.getEmail())
                 .password(passwordEncoder.encode(input.getPassword()))
                 .enabled(false)
+                .verificationCode(generatedRegisterCode)
+                .verificationCodeExpiresAt((LocalDateTime.now().plusHours(24))) // Set expiration
                 .addApp(app)
                 .build();
 
         User savedUser = userRepository.save(user);
-        sendVerificationEmail(user.getEmail(), generateVerificationCode(), input.getApp());
+        sendVerificationEmail(user.getEmail(), generatedRegisterCode, input.getApp());
 
         return "Email sent for verification";
     }
-
 
     public User authenticate(LoginUserRequestDto input) {
         User user = userRepository.findByEmail(input.getEmail())
@@ -103,7 +108,6 @@ public class AuthenticationService {
         }
 
         if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
-            // Clean up expired token
             user.setVerificationCode(null);
             user.setVerificationCodeExpiresAt(null);
             userRepository.save(user);
@@ -158,18 +162,26 @@ public class AuthenticationService {
         }
     }
 
-    private void sendVerificationEmail(String userEmail, String code, String appCode) {
+    private void sendVerificationEmail(String userEmail, String token, String appCode) {
         String subject = "Account Verification";
-        String verificationCode = "VERIFICATION " + appCode + " " + code;
+
+        String verificationLink = buildVerificationLink(userEmail, token);
+
         String htmlMessage = "<html>"
                 + "<body style=\"font-family: Arial, sans-serif; max-width: 450px;\">"
                 + "<div style=\"background-color: #f5f5f5; padding: 20px;\">"
                 + "<h2 style=\"color: #333;\">Welcome to our app!</h2>"
-                + "<p style=\"font-size: 16px;\">Please enter the verification code below to continue:</p>"
+                + "<p style=\"font-size: 16px;\">Please click the link below to verify your account:</p>"
                 + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);\">"
-                + "<h3 style=\"color: #333;\">Verification Code:</h3>"
-                + "<p style=\"font-size: 18px; font-weight: bold; color: #007bff;\">" + verificationCode + "</p>"
+                + "<a href=\"" + verificationLink + "\" "
+                + "style=\"display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; "
+                + "text-decoration: none; border-radius: 5px; font-weight: bold;\">Verify Account</a>"
                 + "</div>"
+                + "<p style=\"font-size: 14px; color: #666; margin-top: 20px;\">"
+                + "If the button doesn't work, copy and paste this link into your browser:</p>"
+                + "<p style=\"font-size: 12px; color: #007bff; word-break: break-all;\">" + verificationLink + "</p>"
+                + "<p style=\"font-size: 12px; color: #999; margin-top: 20px;\">"
+                + "This link will expire in 24 hours. If you didn't request this verification, please ignore this email.</p>"
                 + "</div>"
                 + "</body>"
                 + "</html>";
@@ -177,6 +189,23 @@ public class AuthenticationService {
         emailService.sendVerificationEmail(userEmail, subject, htmlMessage);
     }
 
+    private String buildVerificationLink(String email, String token) {
+        try {
+            String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
+            String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
+
+            String baseUrl = getBaseUrl();
+
+            return String.format("%s/auth/verify?email=%s&token=%s",
+                    baseUrl, encodedEmail, encodedToken);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to build verification link", e);
+        }
+    }
+
+    private String getBaseUrl() {
+        return "http://localhost:8080";
+    }
     public User findUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElse(null); // Return null if not found, controller will handle this
