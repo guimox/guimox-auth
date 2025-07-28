@@ -24,30 +24,13 @@ public class User implements UserDetails {
     @Column(nullable = true)
     private String password;
 
-    @Column(name = "verification_code")
-    private String verificationCode;
-
-    @Column(name = "verification_expiration")
-    private LocalDateTime verificationCodeExpiresAt;
-
-    private boolean enabled;
-
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "user_apps",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "app_id")
-    )
-    private Set<App> apps = new HashSet<>();
+    @Column(name = "last_activity")
+    private LocalDateTime lastActivity;
 
     private User(Builder builder) {
         this.id = builder.id;
         this.email = builder.email;
         this.password = builder.password;
-        this.verificationCode = builder.verificationCode;
-        this.verificationCodeExpiresAt = builder.verificationCodeExpiresAt;  // Add this line
-        this.enabled = builder.enabled;
-        this.apps = builder.apps;
     }
 
     public User() {
@@ -68,27 +51,6 @@ public class User implements UserDetails {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public String getVerificationCode() { return verificationCode; }
-    public void setVerificationCode(String verificationCode) { this.verificationCode = verificationCode; }
-
-    public LocalDateTime getVerificationCodeExpiresAt() { return verificationCodeExpiresAt; }
-    public void setVerificationCodeExpiresAt(LocalDateTime verificationCodeExpiresAt) {
-        this.verificationCodeExpiresAt = verificationCodeExpiresAt;
-    }
-
-    public boolean isEnabled() { return enabled; }
-    public void setEnabled(boolean enabled) { this.enabled = enabled; }
-
-    public Set<App> getApps() { return apps; }
-    public void setApps(Set<App> apps) { this.apps = apps; }
-
-    public void addApp(App app) {
-        if (this.apps == null) {
-            this.apps = new HashSet<>();
-        }
-        this.apps.add(app);
-    }
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of();
@@ -103,12 +65,15 @@ public class User implements UserDetails {
     @Override
     public boolean isCredentialsNonExpired() { return true; }
 
+    @Override
+    public boolean isEnabled() {
+        return false;
+    }
+
     public static class Builder {
         private Long id;
         private String email;
         private String password;
-        private String verificationCode;
-        private LocalDateTime verificationCodeExpiresAt;
         private boolean enabled;
         private Set<App> apps;
 
@@ -127,18 +92,8 @@ public class User implements UserDetails {
             return this;
         }
 
-        public Builder verificationCodeExpiresAt(LocalDateTime expiresAt) {
-            this.verificationCodeExpiresAt = expiresAt;
-            return this;
-        }
-
         public Builder password(String password) {
             this.password = password;
-            return this;
-        }
-
-        public Builder verificationCode(String verificationCode) {
-            this.verificationCode = verificationCode;
             return this;
         }
 

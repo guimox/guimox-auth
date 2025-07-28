@@ -1,4 +1,4 @@
-package com.guimox.auth.responses;
+package com.guimox.auth.dto.response;
 
 public class TokenRefreshResponse {
     private String accessToken;

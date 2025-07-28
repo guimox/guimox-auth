@@ -4,7 +4,6 @@ import com.guimox.auth.model.User;
 import com.guimox.auth.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service

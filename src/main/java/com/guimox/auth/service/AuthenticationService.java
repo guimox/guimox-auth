@@ -3,12 +3,8 @@ package com.guimox.auth.service;
 import com.guimox.auth.dto.oauth2.GoogleUser;
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
-import com.guimox.auth.model.App;
 import com.guimox.auth.model.User;
-import com.guimox.auth.model.Verification;
-import com.guimox.auth.repository.AppRepository;
 import com.guimox.auth.repository.UserRepository;
-import com.guimox.auth.repository.VerificationRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -16,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
 
@@ -26,39 +21,30 @@ public class AuthenticationService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final AppRepository appRepository;
     private final EmailService emailService;
     private final OAuth2Service oAuth2Service;
-    private final VerificationRepository verificationRepository;
 
     public AuthenticationService(
             UserRepository userRepository,
             AuthenticationManager authenticationManager,
-            PasswordEncoder passwordEncoder, AppRepository appRepository,
-            EmailService emailService, OAuth2Service oAuth2Service, VerificationRepository verificationRepository
+            PasswordEncoder passwordEncoder,
+            EmailService emailService,
+            OAuth2Service oAuth2Service
     ) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.appRepository = appRepository;
         this.emailService = emailService;
         this.oAuth2Service = oAuth2Service;
-        this.verificationRepository = verificationRepository;
     }
 
     public String signup(RegisterUserRequestDto input) {
-        App app = appRepository.findByName(input.getApp())
-                .orElseThrow(() -> new RuntimeException("App does not exist"));
-
         String generatedRegisterCode = generateVerificationCode();
 
         User user = new User.Builder()
                 .email(input.getEmail())
                 .password(passwordEncoder.encode(input.getPassword()))
                 .enabled(false)
-                .verificationCode(generatedRegisterCode)
-                .verificationCodeExpiresAt((LocalDateTime.now().plusHours(24))) // Set expiration
-                .addApp(app)
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -103,31 +89,10 @@ public class AuthenticationService {
             throw new RuntimeException("Account is already verified");
         }
 
-        if (user.getVerificationCode() == null) {
-            throw new RuntimeException("No pending verification for this account");
-        }
-
-        if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
-            user.setVerificationCode(null);
-            user.setVerificationCodeExpiresAt(null);
-            userRepository.save(user);
-            throw new RuntimeException("Verification link has expired. Please request a new one");
-        }
-
-        if (!user.getVerificationCode().equals(token)) {
-            throw new RuntimeException("Invalid verification link");
-        }
-
-        user.setEnabled(true);
-        user.setVerificationCode(null);
-        user.setVerificationCodeExpiresAt(null);
         userRepository.save(user);
     }
 
     public String processGrantCode(String code, String appCodeString) {
-        App appCode = appRepository.findByName(appCodeString)
-                .orElseThrow(() -> new RuntimeException("App does not exist"));
-
         String accessToken = oAuth2Service.getOauthAccessTokenGoogle(code);
 
         GoogleUser googleUser = oAuth2Service.getProfileDetailsGoogle(accessToken);
@@ -135,13 +100,10 @@ public class AuthenticationService {
         User user = new User.Builder()
                 .email(googleUser.getEmail())
                 .password(null)
-                .addApp(appCode)
                 .build();
 
         String generatedCode = generateVerificationCode();
         User savedUser = userRepository.save(user);
-        Verification verification = new Verification(generatedCode, user.getEmail(), LocalDateTime.now().plusHours(1));
-        verificationRepository.save(verification);
         sendVerificationEmail(savedUser.getEmail(), generatedCode, appCodeString);
 
         return "worked";
@@ -154,9 +116,6 @@ public class AuthenticationService {
             if (user.isEnabled()) {
                 throw new RuntimeException("Account is already verified");
             }
-            Verification verification = new Verification(generateVerificationCode(), user.getEmail(), LocalDateTime.now().plusHours(1));
-            sendVerificationEmail(email, verification.getCode(), appCodeString);
-            verificationRepository.save(verification);
         } else {
             throw new RuntimeException("User not found");
         }
