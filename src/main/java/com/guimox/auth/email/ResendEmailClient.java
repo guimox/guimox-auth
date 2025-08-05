@@ -15,7 +15,7 @@ public class ResendEmailClient implements EmailSender {
     }
 
     public void sendVerificationEmail(String to, String subject, String htmlBody) {
-        CreateEmailOptions request = CreateEmailOptions.builder().from("Your App <auth@auth.guimox.dev>") // Must be a verified domain in Resend
+        CreateEmailOptions request = CreateEmailOptions.builder().from("Your App <auth@guimox.dev>")
                 .to(to).subject(subject).html(htmlBody).build();
 
         try {

@@ -52,11 +52,16 @@ public class AuthenticationService {
                 .enabled(false)
                 .build();
 
+
+        String verificationToken = jwtUtils.generateTokenSignup(user, generatedRegisterCode);
+
+        try {
+            sendVerificationEmail(user.getEmail(), verificationToken, input.getApp());
+        } catch (RuntimeException e) {
+            throw new RuntimeException(e);
+        }
+
         User savedUser = userRepository.save(user);
-
-        String verificationToken = jwtUtils.generateTokenSignup(savedUser, generatedRegisterCode);
-
-        sendVerificationEmail(user.getEmail(), verificationToken, input.getApp());
 
         return "Email sent for verification";
     }
