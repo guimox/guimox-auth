@@ -1,9 +1,11 @@
 package com.guimox.auth.service;
 
+import com.guimox.auth.config.OAuth2Config;
 import com.guimox.auth.dto.oauth2.GoogleUser;
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
-import com.guimox.auth.model.User;
+import com.guimox.auth.email.ResendEmailClient;
+import com.guimox.auth.models.User;
 import com.guimox.auth.repository.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -17,25 +19,24 @@ import java.util.Random;
 
 @Service
 public class AuthenticationService {
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final EmailService emailService;
-    private final OAuth2Service oAuth2Service;
+    private final ResendEmailClient resendEmailClient;
+    private final OAuth2Config oAuth2Config;
 
     public AuthenticationService(
             UserRepository userRepository,
             AuthenticationManager authenticationManager,
             PasswordEncoder passwordEncoder,
-            EmailService emailService,
-            OAuth2Service oAuth2Service
+            ResendEmailClient resendEmailClient,
+            OAuth2Config oAuth2Config
     ) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
-        this.oAuth2Service = oAuth2Service;
+        this.resendEmailClient = resendEmailClient;
+        this.oAuth2Config = oAuth2Config;
     }
 
     public String signup(RegisterUserRequestDto input) {
@@ -93,9 +94,9 @@ public class AuthenticationService {
     }
 
     public String processGrantCode(String code, String appCodeString) {
-        String accessToken = oAuth2Service.getOauthAccessTokenGoogle(code);
+        String accessToken = oAuth2Config.getOauthAccessTokenGoogle(code);
 
-        GoogleUser googleUser = oAuth2Service.getProfileDetailsGoogle(accessToken);
+        GoogleUser googleUser = oAuth2Config.getProfileDetailsGoogle(accessToken);
 
         User user = new User.Builder()
                 .email(googleUser.getEmail())
@@ -145,7 +146,7 @@ public class AuthenticationService {
                 + "</body>"
                 + "</html>";
 
-        emailService.sendVerificationEmail(userEmail, subject, htmlMessage);
+        resendEmailClient.sendVerificationEmail(userEmail, subject, htmlMessage);
     }
 
     private String buildVerificationLink(String email, String token) {

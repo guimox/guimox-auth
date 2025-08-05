@@ -1,5 +1,7 @@
     package com.guimox.auth.config;
 
+    import com.guimox.auth.jwt.JwtAuthenticationFilter;
+    import com.guimox.auth.service.CustomUserDetailsService;
     import org.springframework.context.annotation.Bean;
     import org.springframework.context.annotation.Configuration;
     import org.springframework.security.authentication.AuthenticationProvider;
@@ -16,16 +18,16 @@
 
     @Configuration
     @EnableWebSecurity
-    public class SecurityConfiguration {
-        private final AuthenticationProvider authenticationProvider;
+    public class SecurityConfig {
         private final JwtAuthenticationFilter jwtAuthenticationFilter;
+        private final AuthConfig authConfig;
 
-        public SecurityConfiguration(
+        public SecurityConfig(
                 JwtAuthenticationFilter jwtAuthenticationFilter,
-                AuthenticationProvider authenticationProvider
+                CustomUserDetailsService userDetailsService, AuthConfig authConfig
         ) {
-            this.authenticationProvider = authenticationProvider;
             this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+            this.authConfig = authConfig;
         }
 
         @Bean
@@ -44,7 +46,7 @@
                     .sessionManagement(session -> session
                             .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                     )
-                    .authenticationProvider(authenticationProvider)
+                    .authenticationProvider(authConfig.authenticationProvider())
                     .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
             return http.build();

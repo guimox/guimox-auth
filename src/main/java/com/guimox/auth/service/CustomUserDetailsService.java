@@ -1,4 +1,4 @@
-package com.guimox.auth.config;
+package com.guimox.auth.service;
 
 import com.guimox.auth.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;

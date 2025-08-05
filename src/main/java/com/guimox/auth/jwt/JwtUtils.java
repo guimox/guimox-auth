@@ -1,4 +1,4 @@
-package com.guimox.auth.service;
+package com.guimox.auth.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Component
-public class JwtService {
+public class JwtUtils {
 
     @Value("${app.jwt.secret}")
     private String secretKey;

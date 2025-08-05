@@ -1,4 +1,4 @@
-package com.guimox.auth.model;
+package com.guimox.auth.models;
 
 import jakarta.persistence.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -6,9 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "users")
@@ -75,10 +73,8 @@ public class User implements UserDetails {
         private String email;
         private String password;
         private boolean enabled;
-        private Set<App> apps;
 
         public Builder() {
-            this.apps = new HashSet<>();
             this.enabled = false;
         }
 
@@ -99,16 +95,6 @@ public class User implements UserDetails {
 
         public Builder enabled(boolean enabled) {
             this.enabled = enabled;
-            return this;
-        }
-
-        public Builder apps(Set<App> apps) {
-            this.apps = apps;
-            return this;
-        }
-
-        public Builder addApp(App app) {
-            this.apps.add(app);
             return this;
         }
 

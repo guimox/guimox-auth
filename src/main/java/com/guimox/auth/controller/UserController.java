@@ -1,7 +1,7 @@
 package com.guimox.auth.controller;
 
 import com.guimox.auth.dto.response.UserDTO;
-import com.guimox.auth.model.User;
+import com.guimox.auth.models.User;
 import com.guimox.auth.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;

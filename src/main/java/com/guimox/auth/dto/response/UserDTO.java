@@ -1,6 +1,6 @@
 package com.guimox.auth.dto.response;
 
-import com.guimox.auth.model.User;
+import com.guimox.auth.models.User;
 
 public class UserDTO {
     private Long id;

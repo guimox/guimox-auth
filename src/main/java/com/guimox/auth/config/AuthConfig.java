@@ -1,5 +1,6 @@
 package com.guimox.auth.config;
 
+import com.guimox.auth.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -9,10 +10,10 @@ import org.springframework.security.config.annotation.authentication.configurati
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Configuration
-public class ApplicationConfiguration {
+public class AuthConfig {
     private final CustomUserDetailsService userDetailsService;
 
-    public ApplicationConfiguration(CustomUserDetailsService userDetailsService) {
+    public AuthConfig(CustomUserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
 

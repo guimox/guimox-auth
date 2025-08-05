@@ -1,6 +1,7 @@
 package com.guimox.auth.service;
 
-import com.guimox.auth.model.User;
+import com.guimox.auth.email.ResendEmailClient;
+import com.guimox.auth.models.User;
 import com.guimox.auth.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
@@ -10,7 +11,7 @@ import java.util.List;
 public class UserService {
     private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository, EmailService emailService) {
+    public UserService(UserRepository userRepository, ResendEmailClient resendEmailClient) {
         this.userRepository = userRepository;
     }
 

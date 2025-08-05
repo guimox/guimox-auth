@@ -1,4 +1,4 @@
-package com.guimox.auth.service;
+package com.guimox.auth.config;
 
 import com.guimox.auth.dto.oauth2.GoogleUser;
 import com.nimbusds.jose.shaded.gson.Gson;
@@ -13,7 +13,7 @@ import org.springframework.util.MultiValueMap;
 import java.lang.reflect.Type;
 
 @Component
-public class OAuth2Service {
+public class OAuth2Config {
 
     @Value("${spring.oauth2.client-id}")
     private String clientId;
@@ -26,18 +26,7 @@ public class OAuth2Service {
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("code", code);
-        params.add("redirect_uri", "http://localhost:8080/auth/grantcode");
-        params.add("client_id", clientId);
-        params.add("client_secret", clientSecret);
-        params.add("scope", "https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile");
-        params.add("scope", "https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email");
-        params.add("scope", "openid");
-        params.add("grant_type", "authorization_code");
-        params.add("app", "cerca");
-
-        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(params, httpHeaders);
+        HttpEntity<MultiValueMap<String, String>> requestEntity = getMultiValueMapHttpEntity(code, httpHeaders);
 
         String url = "https://oauth2.googleapis.com/token";
         String response = restTemplate.postForObject(url, requestEntity, String.class);
@@ -47,6 +36,20 @@ public class OAuth2Service {
         return jsonObject.get("access_token").toString().replace("\"", "");
     }
 
+    private HttpEntity<MultiValueMap<String, String>> getMultiValueMapHttpEntity(String code, HttpHeaders httpHeaders) {
+        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+        params.add("code", code);
+        params.add("redirect_uri", "http://localhost:8080/auth/grantcode");
+        params.add("client_id", clientId);
+        params.add("client_secret", clientSecret);
+        params.add("scope", "https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile");
+        params.add("scope", "https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email");
+        params.add("scope", "openid");
+        params.add("grant_type", "authorization_code");
+
+        return new HttpEntity<>(params, httpHeaders);
+    }
+
     public GoogleUser getProfileDetailsGoogle(String accessToken) {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders httpHeaders = new HttpHeaders();
@@ -54,6 +57,7 @@ public class OAuth2Service {
         HttpEntity<String> requestEntity = new HttpEntity<>(httpHeaders);
         String url = "https://www.googleapis.com/oauth2/v2/userinfo";
         ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET, requestEntity, String.class);
+
         return new Gson().fromJson(response.getBody(), (Type) GoogleUser.class);
     }
 }

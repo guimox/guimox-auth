@@ -3,11 +3,11 @@ package com.guimox.auth.controller;
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RefreshTokenRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
-import com.guimox.auth.model.User;
+import com.guimox.auth.models.User;
 import com.guimox.auth.dto.response.LoginResponse;
 import com.guimox.auth.dto.response.TokenRefreshResponse;
 import com.guimox.auth.service.AuthenticationService;
-import com.guimox.auth.service.JwtService;
+import com.guimox.auth.jwt.JwtUtils;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 @RestController
 public class AuthenticationController {
-    private final JwtService jwtService;
+    private final JwtUtils jwtUtils;
     private final AuthenticationService authenticationService;
 
-    public AuthenticationController(JwtService jwtService, AuthenticationService authenticationService) {
-        this.jwtService = jwtService;
+    public AuthenticationController(JwtUtils jwtUtils, AuthenticationService authenticationService) {
+        this.jwtUtils = jwtUtils;
         this.authenticationService = authenticationService;
     }
 
@@ -39,10 +39,10 @@ public class AuthenticationController {
     public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserRequestDto loginUserRequestDto) {
         User authenticatedUser = authenticationService.authenticate(loginUserRequestDto);
 
-        String accessToken = jwtService.generateToken(authenticatedUser);
-        String refreshToken = jwtService.generateRefreshToken(authenticatedUser);
+        String accessToken = jwtUtils.generateToken(authenticatedUser);
+        String refreshToken = jwtUtils.generateRefreshToken(authenticatedUser);
 
-        LoginResponse loginResponse = new LoginResponse(accessToken, jwtService.getAccessTokenExpirationTime(), refreshToken);
+        LoginResponse loginResponse = new LoginResponse(accessToken, jwtUtils.getAccessTokenExpirationTime(), refreshToken);
 
         return ResponseEntity.ok(loginResponse);
     }
@@ -81,14 +81,14 @@ public class AuthenticationController {
         String requestRefreshToken = request.getRefreshToken();
 
         try {
-            if (jwtService.isTokenValid(requestRefreshToken)) {
-                String username = jwtService.extractUsername(requestRefreshToken);
+            if (jwtUtils.isTokenValid(requestRefreshToken)) {
+                String username = jwtUtils.extractUsername(requestRefreshToken);
                 User user = authenticationService.findUserByEmail(username); // Or however you retrieve the user
                 if (user == null) {
                     return ResponseEntity.badRequest().body("Invalid refresh token: User not found.");
                 }
 
-                String newAccessToken = jwtService.generateToken(user);
+                String newAccessToken = jwtUtils.generateToken(user);
 
                 return ResponseEntity.ok(new TokenRefreshResponse(newAccessToken, requestRefreshToken));
             } else {
