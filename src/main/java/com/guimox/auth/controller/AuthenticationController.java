@@ -49,10 +49,9 @@ public class AuthenticationController {
 
     @GetMapping("/verify")
     public ResponseEntity<String> verifyUser(
-            @RequestParam String token,
-            @RequestParam String email) {
+            @RequestParam String token) {
         try {
-            authenticationService.verifyUser(token, email);
+            authenticationService.verifyUser(token);
 
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

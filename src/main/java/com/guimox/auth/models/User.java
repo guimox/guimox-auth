@@ -25,10 +25,14 @@ public class User implements UserDetails {
     @Column(name = "last_activity")
     private LocalDateTime lastActivity;
 
+    @Column(name = "enabled")
+    private boolean enabled;
+
     private User(Builder builder) {
         this.id = builder.id;
         this.email = builder.email;
         this.password = builder.password;
+        this.enabled = builder.enabled;
     }
 
     public User() {
@@ -39,6 +43,10 @@ public class User implements UserDetails {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     @Override
     public String getUsername() {
@@ -65,7 +73,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return false;
+        return this.enabled;
     }
 
     public static class Builder {

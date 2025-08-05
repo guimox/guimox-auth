@@ -5,8 +5,10 @@ import com.guimox.auth.dto.oauth2.GoogleUser;
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
 import com.guimox.auth.email.ResendEmailClient;
+import com.guimox.auth.jwt.JwtUtils;
 import com.guimox.auth.models.User;
 import com.guimox.auth.repository.UserRepository;
+import io.jsonwebtoken.Claims;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,19 +26,21 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final ResendEmailClient resendEmailClient;
     private final OAuth2Config oAuth2Config;
+    private final JwtUtils jwtUtils;
 
     public AuthenticationService(
             UserRepository userRepository,
             AuthenticationManager authenticationManager,
             PasswordEncoder passwordEncoder,
             ResendEmailClient resendEmailClient,
-            OAuth2Config oAuth2Config
+            OAuth2Config oAuth2Config, JwtUtils jwtUtils
     ) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.resendEmailClient = resendEmailClient;
         this.oAuth2Config = oAuth2Config;
+        this.jwtUtils = jwtUtils;
     }
 
     public String signup(RegisterUserRequestDto input) {
@@ -49,7 +53,10 @@ public class AuthenticationService {
                 .build();
 
         User savedUser = userRepository.save(user);
-        sendVerificationEmail(user.getEmail(), generatedRegisterCode, input.getApp());
+
+        String verificationToken = jwtUtils.generateTokenSignup(savedUser, generatedRegisterCode);
+
+        sendVerificationEmail(user.getEmail(), verificationToken, input.getApp());
 
         return "Email sent for verification";
     }
@@ -71,15 +78,22 @@ public class AuthenticationService {
         return user;
     }
 
-    public void verifyUser(String token, String email) {
+    public void verifyUser(String token) {
         if (token == null || token.trim().isEmpty()) {
             throw new RuntimeException("Verification token is required");
         }
-        if (email == null || email.trim().isEmpty()) {
-            throw new RuntimeException("Email is required");
+
+        Claims claims;
+        try {
+            claims = jwtUtils.extractAllClaims(token);
+        } catch (Exception e) {
+            throw new RuntimeException("Invalid or expired verification token");
         }
 
-        Optional<User> optionalUser = userRepository.findByEmail(email);
+        String tokenEmail = claims.getSubject();
+        String verificationCode = claims.get("verificationCode", String.class);
+
+        Optional<User> optionalUser = userRepository.findByEmail(tokenEmail);
         if (optionalUser.isEmpty()) {
             throw new RuntimeException("Invalid verification link");
         }
@@ -90,8 +104,10 @@ public class AuthenticationService {
             throw new RuntimeException("Account is already verified");
         }
 
+        user.setEnabled(true);
         userRepository.save(user);
     }
+
 
     public String processGrantCode(String code, String appCodeString) {
         String accessToken = oAuth2Config.getOauthAccessTokenGoogle(code);
@@ -125,7 +141,7 @@ public class AuthenticationService {
     private void sendVerificationEmail(String userEmail, String token, String appCode) {
         String subject = "Account Verification";
 
-        String verificationLink = buildVerificationLink(userEmail, token);
+        String verificationLink = buildVerificationLink(token);
 
         String htmlMessage = "<html>"
                 + "<body style=\"font-family: Arial, sans-serif; max-width: 450px;\">"
@@ -137,9 +153,6 @@ public class AuthenticationService {
                 + "style=\"display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; "
                 + "text-decoration: none; border-radius: 5px; font-weight: bold;\">Verify Account</a>"
                 + "</div>"
-                + "<p style=\"font-size: 14px; color: #666; margin-top: 20px;\">"
-                + "If the button doesn't work, copy and paste this link into your browser:</p>"
-                + "<p style=\"font-size: 12px; color: #007bff; word-break: break-all;\">" + verificationLink + "</p>"
                 + "<p style=\"font-size: 12px; color: #999; margin-top: 20px;\">"
                 + "This link will expire in 24 hours. If you didn't request this verification, please ignore this email.</p>"
                 + "</div>"
@@ -149,15 +162,12 @@ public class AuthenticationService {
         resendEmailClient.sendVerificationEmail(userEmail, subject, htmlMessage);
     }
 
-    private String buildVerificationLink(String email, String token) {
+    private String buildVerificationLink(String token) {
         try {
-            String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
             String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
-
             String baseUrl = getBaseUrl();
 
-            return String.format("%s/auth/verify?email=%s&token=%s",
-                    baseUrl, encodedEmail, encodedToken);
+            return String.format("%s/auth/verify?token=%s", baseUrl, encodedToken);
         } catch (Exception e) {
             throw new RuntimeException("Failed to build verification link", e);
         }

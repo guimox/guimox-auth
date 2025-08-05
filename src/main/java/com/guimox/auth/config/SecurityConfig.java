@@ -34,13 +34,14 @@
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
             http
                     .csrf(csrf -> csrf.disable())
-                    .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Apply CORS configuration
+                    .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                     .authorizeHttpRequests(authorize -> authorize
                             .requestMatchers("/grantcode/**").permitAll()
-                            .requestMatchers("/error").permitAll() // Allow access to error endpoint
+                            .requestMatchers("/error").permitAll()
                             .requestMatchers("/auth/**").permitAll()
-                            .requestMatchers("/api/auth/**").permitAll() // Changed from /auth/** to /api/auth/**
-                            .requestMatchers("/auth/verify").permitAll() // Explicitly allow GET verification
+                            .requestMatchers("/favicon.ico").permitAll()
+                            .requestMatchers("/api/auth/**").permitAll()
+                            .requestMatchers("/auth/verify").permitAll()
                             .anyRequest().authenticated()
                     )
                     .sessionManagement(session -> session
