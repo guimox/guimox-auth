@@ -6,7 +6,9 @@ import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
 import com.guimox.auth.email.ResendEmailClient;
 import com.guimox.auth.jwt.JwtUtils;
+import com.guimox.auth.models.AuthClient;
 import com.guimox.auth.models.User;
+import com.guimox.auth.repository.AuthClientRepository;
 import com.guimox.auth.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -27,30 +30,35 @@ public class AuthenticationService {
     private final ResendEmailClient resendEmailClient;
     private final OAuth2Config oAuth2Config;
     private final JwtUtils jwtUtils;
+    private final AuthClientRepository authClientRepository;
 
-    public AuthenticationService(
-            UserRepository userRepository,
-            AuthenticationManager authenticationManager,
-            PasswordEncoder passwordEncoder,
-            ResendEmailClient resendEmailClient,
-            OAuth2Config oAuth2Config, JwtUtils jwtUtils
-    ) {
+    public AuthenticationService(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, ResendEmailClient resendEmailClient, OAuth2Config oAuth2Config, JwtUtils jwtUtils, AuthClientRepository authClientRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.resendEmailClient = resendEmailClient;
         this.oAuth2Config = oAuth2Config;
         this.jwtUtils = jwtUtils;
+        this.authClientRepository = authClientRepository;
+    }
+
+    public URI getRedirectUri(String clientId, boolean success, String errorMessage) {
+        AuthClient client = authClientRepository.findById(clientId).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + clientId));
+
+        String baseUri = client.getRedirectUri();
+
+        if (success) {
+            return URI.create(baseUri + "?status=success");
+        } else {
+            String encodedMessage = URLEncoder.encode(errorMessage, StandardCharsets.UTF_8);
+            return URI.create(baseUri + "?status=error&message=" + encodedMessage);
+        }
     }
 
     public String signup(RegisterUserRequestDto input) {
         String generatedRegisterCode = generateVerificationCode();
 
-        User user = new User.Builder()
-                .email(input.getEmail())
-                .password(passwordEncoder.encode(input.getPassword()))
-                .enabled(false)
-                .build();
+        User user = new User.Builder().email(input.getEmail()).password(passwordEncoder.encode(input.getPassword())).enabled(false).build();
 
 
         String verificationToken = jwtUtils.generateTokenSignup(user, generatedRegisterCode);
@@ -67,18 +75,12 @@ public class AuthenticationService {
     }
 
     public User authenticate(LoginUserRequestDto input) {
-        User user = userRepository.findByEmail(input.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(input.getEmail()).orElseThrow(() -> new RuntimeException("User not found"));
 
         if (!user.isEnabled()) {
             throw new RuntimeException("Account not verified. Please verify your account.");
         }
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        input.getEmail(),
-                        input.getPassword()
-                )
-        );
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(input.getEmail(), input.getPassword()));
 
         return user;
     }
@@ -113,16 +115,12 @@ public class AuthenticationService {
         userRepository.save(user);
     }
 
-
     public String processGrantCode(String code, String appCodeString) {
         String accessToken = oAuth2Config.getOauthAccessTokenGoogle(code);
 
         GoogleUser googleUser = oAuth2Config.getProfileDetailsGoogle(accessToken);
 
-        User user = new User.Builder()
-                .email(googleUser.getEmail())
-                .password(null)
-                .build();
+        User user = new User.Builder().email(googleUser.getEmail()).password(null).build();
 
         String generatedCode = generateVerificationCode();
         User savedUser = userRepository.save(user);
@@ -146,33 +144,23 @@ public class AuthenticationService {
     private void sendVerificationEmail(String userEmail, String token, String appCode) {
         String subject = "Account Verification";
 
-        String verificationLink = buildVerificationLink(token);
+        String verificationLink = buildVerificationLink(token, appCode);
 
-        String htmlMessage = "<html>"
-                + "<body style=\"font-family: Arial, sans-serif; max-width: 450px;\">"
-                + "<div style=\"background-color: #f5f5f5; padding: 20px;\">"
-                + "<h2 style=\"color: #333;\">Welcome to our app!</h2>"
-                + "<p style=\"font-size: 16px;\">Please click the link below to verify your account:</p>"
-                + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);\">"
-                + "<a href=\"" + verificationLink + "\" "
-                + "style=\"display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; "
-                + "text-decoration: none; border-radius: 5px; font-weight: bold;\">Verify Account</a>"
-                + "</div>"
-                + "<p style=\"font-size: 12px; color: #999; margin-top: 20px;\">"
-                + "This link will expire in 24 hours. If you didn't request this verification, please ignore this email.</p>"
-                + "</div>"
-                + "</body>"
-                + "</html>";
+        String htmlMessage = "<html>" + "<body style=\"font-family: Arial, sans-serif; max-width: 450px;\">" + "<div style=\"background-color: #f5f5f5; padding: 20px;\">" + "<h2 style=\"color: #333;\">Welcome to our app!</h2>" + "<p style=\"font-size: 16px;\">Please click the link below to verify your account:</p>" + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);\">" + "<a href=\"" + verificationLink + "\" " + "style=\"display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; " + "text-decoration: none; border-radius: 5px; font-weight: bold;\">Verify Account</a>" + "</div>" + "<p style=\"font-size: 12px; color: #999; margin-top: 20px;\">" + "This link will expire in 24 hours. If you didn't request this verification, please ignore this email.</p>" + "</div>" + "</body>" + "</html>";
 
         resendEmailClient.sendVerificationEmail(userEmail, subject, htmlMessage);
     }
 
-    private String buildVerificationLink(String token) {
+    private String buildVerificationLink(String token, String appCode) {
         try {
             String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
             String baseUrl = getBaseUrl();
 
-            return String.format("%s/auth/verify?token=%s", baseUrl, encodedToken);
+            boolean appCodeExists = authClientRepository.existsById(appCode);
+            if (!appCodeExists) throw new RuntimeException("Failed to build verification link");
+
+
+            return String.format("%s/auth/verify?token=%s&client_id=%s", baseUrl, encodedToken, appCode);
         } catch (Exception e) {
             throw new RuntimeException("Failed to build verification link", e);
         }
@@ -181,9 +169,9 @@ public class AuthenticationService {
     private String getBaseUrl() {
         return "http://localhost:8080";
     }
+
     public User findUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElse(null); // Return null if not found, controller will handle this
+        return userRepository.findByEmail(email).orElse(null); // Return null if not found, controller will handle this
     }
 
     private String generateVerificationCode() {

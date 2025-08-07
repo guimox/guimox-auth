@@ -8,12 +8,17 @@ import com.guimox.auth.dto.response.LoginResponse;
 import com.guimox.auth.dto.response.TokenRefreshResponse;
 import com.guimox.auth.service.AuthenticationService;
 import com.guimox.auth.jwt.JwtUtils;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RequestMapping("/auth")
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @RestController
+@RequestMapping("/auth")
 public class AuthenticationController {
     private final JwtUtils jwtUtils;
     private final AuthenticationService authenticationService;
@@ -48,20 +53,18 @@ public class AuthenticationController {
     }
 
     @GetMapping("/verify")
-    public ResponseEntity<String> verifyUser(
-            @RequestParam String token) {
+    public ResponseEntity<Void> verifyUser(
+            @RequestParam("token") String token,
+            @RequestParam("client_id") String clientId) {
+
         try {
             authenticationService.verifyUser(token);
+            URI successRedirect = authenticationService.getRedirectUri(clientId, true, null);
+            return ResponseEntity.status(HttpStatus.FOUND).location(successRedirect).build();
 
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body("<html><body><h2>Account verified successfully!</h2>" +
-                            "<p>You can now close this window and log in.</p></body></html>");
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body("<html><body><h2>Verification failed</h2>" +
-                            "<p>" + e.getMessage() + "</p></body></html>");
+            URI failureRedirect = authenticationService.getRedirectUri(clientId, false, e.getMessage());
+            return ResponseEntity.status(HttpStatus.FOUND).location(failureRedirect).build();
         }
     }
 

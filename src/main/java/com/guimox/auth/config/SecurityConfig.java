@@ -38,10 +38,10 @@
                     .authorizeHttpRequests(authorize -> authorize
                             .requestMatchers("/grantcode/**").permitAll()
                             .requestMatchers("/error").permitAll()
-                            .requestMatchers("/auth/**").permitAll()
+                            .requestMatchers("/client/**").permitAll()
                             .requestMatchers("/favicon.ico").permitAll()
-                            .requestMatchers("/api/auth/**").permitAll()
                             .requestMatchers("/auth/verify").permitAll()
+                            .requestMatchers("/auth/signup").permitAll()
                             .anyRequest().authenticated()
                     )
                     .sessionManagement(session -> session

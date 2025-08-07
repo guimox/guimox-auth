@@ -22,7 +22,7 @@ public class User implements UserDetails {
     @Column(nullable = true)
     private String password;
 
-    @Column(name = "last_activity")
+    @Column(name = "last_login")
     private LocalDateTime lastActivity;
 
     @Column(name = "enabled")
