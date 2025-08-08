@@ -12,10 +12,17 @@ public class AuthClient {
     @Id
     private String clientId;
 
+    @Column(name = "app_name")
+    private String appName;
+
     @Column(nullable = false)
     private String redirectUri;
 
     public String getRedirectUri() {
         return redirectUri;
+    }
+
+    public String getAppName() {
+        return appName;
     }
 }

@@ -3,6 +3,7 @@ package com.guimox.auth.controller;
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RefreshTokenRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
+import com.guimox.auth.dto.response.SignupResponseDto;
 import com.guimox.auth.models.User;
 import com.guimox.auth.dto.response.LoginResponse;
 import com.guimox.auth.dto.response.TokenRefreshResponse;
@@ -35,8 +36,8 @@ public class AuthenticationController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<String> register(@RequestBody RegisterUserRequestDto registerUserRequestDto) {
-        String registeredUser = authenticationService.signup(registerUserRequestDto);
+    public ResponseEntity<SignupResponseDto> register(@RequestBody RegisterUserRequestDto registerUserRequestDto) {
+        SignupResponseDto registeredUser = authenticationService.signup(registerUserRequestDto);
         return ResponseEntity.ok(registeredUser);
     }
 
@@ -54,16 +55,15 @@ public class AuthenticationController {
 
     @GetMapping("/verify")
     public ResponseEntity<Void> verifyUser(
-            @RequestParam("token") String token,
-            @RequestParam("client_id") String clientId) {
+            @RequestParam("token") String token) {
 
         try {
             authenticationService.verifyUser(token);
-            URI successRedirect = authenticationService.getRedirectUri(clientId, true, null);
+            URI successRedirect = authenticationService.getRedirectUri(token, true, null);
             return ResponseEntity.status(HttpStatus.FOUND).location(successRedirect).build();
 
         } catch (RuntimeException e) {
-            URI failureRedirect = authenticationService.getRedirectUri(clientId, false, e.getMessage());
+            URI failureRedirect = authenticationService.getRedirectUri(token, false, e.getMessage());
             return ResponseEntity.status(HttpStatus.FOUND).location(failureRedirect).build();
         }
     }

@@ -1,0 +1,22 @@
+package com.guimox.auth.service;
+
+import com.guimox.auth.dto.response.ClientResponseDto;
+import com.guimox.auth.models.AuthClient;
+import com.guimox.auth.repository.AuthClientRepository;
+import org.springframework.stereotype.Service;
+
+@Service
+public class ClientService {
+
+    private AuthClientRepository authClientRepository;
+
+    public ClientService(AuthClientRepository authClientRepository) {
+        this.authClientRepository = authClientRepository;
+    }
+
+    public ClientResponseDto getAppNameFromCode(String appCode) {
+        AuthClient authClient = authClientRepository.findById(appCode).orElseThrow(() -> new RuntimeException("Faulty app code"));
+        return new ClientResponseDto(authClient.getAppName());
+    }
+
+}

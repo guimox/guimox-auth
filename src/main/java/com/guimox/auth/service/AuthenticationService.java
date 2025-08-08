@@ -4,6 +4,7 @@ import com.guimox.auth.config.OAuth2Config;
 import com.guimox.auth.dto.oauth2.GoogleUser;
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
+import com.guimox.auth.dto.response.SignupResponseDto;
 import com.guimox.auth.email.ResendEmailClient;
 import com.guimox.auth.jwt.JwtUtils;
 import com.guimox.auth.models.AuthClient;
@@ -11,6 +12,7 @@ import com.guimox.auth.models.User;
 import com.guimox.auth.repository.AuthClientRepository;
 import com.guimox.auth.repository.UserRepository;
 import io.jsonwebtoken.Claims;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,6 +34,12 @@ public class AuthenticationService {
     private final JwtUtils jwtUtils;
     private final AuthClientRepository authClientRepository;
 
+    @Value("${spring.profiles.active:default}")
+    private String activeProfile;
+
+    @Value("${server.port}")
+    private String serverPort;
+
     public AuthenticationService(UserRepository userRepository, AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, ResendEmailClient resendEmailClient, OAuth2Config oAuth2Config, JwtUtils jwtUtils, AuthClientRepository authClientRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
@@ -42,8 +50,9 @@ public class AuthenticationService {
         this.authClientRepository = authClientRepository;
     }
 
-    public URI getRedirectUri(String clientId, boolean success, String errorMessage) {
-        AuthClient client = authClientRepository.findById(clientId).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + clientId));
+    public URI getRedirectUri(String token, boolean success, String errorMessage) {
+        String appCode = jwtUtils.extractApp(token);
+        AuthClient client = authClientRepository.findById(appCode).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + appCode));
 
         String baseUri = client.getRedirectUri();
 
@@ -55,13 +64,16 @@ public class AuthenticationService {
         }
     }
 
-    public String signup(RegisterUserRequestDto input) {
+    public SignupResponseDto signup(RegisterUserRequestDto input) {
         String generatedRegisterCode = generateVerificationCode();
 
-        User user = new User.Builder().email(input.getEmail()).password(passwordEncoder.encode(input.getPassword())).enabled(false).build();
+        User user = new User.Builder()
+                .email(input.getEmail())
+                .password(passwordEncoder.encode(input.getPassword()))
+                .enabled(false)
+                .build();
 
-
-        String verificationToken = jwtUtils.generateTokenSignup(user, generatedRegisterCode);
+        String verificationToken = jwtUtils.generateTokenSignup(input.getApp(), user, generatedRegisterCode);
 
         try {
             sendVerificationEmail(user.getEmail(), verificationToken, input.getApp());
@@ -71,8 +83,9 @@ public class AuthenticationService {
 
         User savedUser = userRepository.save(user);
 
-        return "Email sent for verification";
+        return new SignupResponseDto("Verification email sent", savedUser.getEmail());
     }
+
 
     public User authenticate(LoginUserRequestDto input) {
         User user = userRepository.findByEmail(input.getEmail()).orElseThrow(() -> new RuntimeException("User not found"));
@@ -154,20 +167,24 @@ public class AuthenticationService {
     private String buildVerificationLink(String token, String appCode) {
         try {
             String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
-            String baseUrl = getBaseUrl();
+            String baseUrl = getBaseUrl(appCode);
 
             boolean appCodeExists = authClientRepository.existsById(appCode);
             if (!appCodeExists) throw new RuntimeException("Failed to build verification link");
 
 
-            return String.format("%s/auth/verify?token=%s&client_id=%s", baseUrl, encodedToken, appCode);
+            return String.format("%s/auth/verify?token=%s", baseUrl, encodedToken);
         } catch (Exception e) {
             throw new RuntimeException("Failed to build verification link", e);
         }
     }
 
-    private String getBaseUrl() {
-        return "http://localhost:8080";
+    private String getBaseUrl(String appCode) {
+        if ("hlg".equalsIgnoreCase(activeProfile) || "dev".equalsIgnoreCase(activeProfile)) {
+            return "http://localhost:" + serverPort;
+        } else {
+            return "https://auth.guimox.dev";
+        }
     }
 
     public User findUserByEmail(String email) {

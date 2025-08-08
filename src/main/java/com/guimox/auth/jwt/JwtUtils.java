@@ -36,13 +36,18 @@ public class JwtUtils {
         return claimsResolver.apply(claims);
     }
 
+    public String extractApp(String token) {
+        return extractClaim(token, claims -> claims.get("app", String.class));
+    }
+
     public String generateToken(UserDetails userDetails) {
         return generateToken(new HashMap<>(), userDetails);
     }
 
-    public String generateTokenSignup(UserDetails userDetails, String code) {
+    public String generateTokenSignup(String app, UserDetails userDetails, String code) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("verificationCode", code);
+        claims.put("code", code);
+        claims.put("app", app);
         return generateToken(claims, userDetails);
     }
 
