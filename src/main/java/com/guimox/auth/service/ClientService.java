@@ -5,10 +5,12 @@ import com.guimox.auth.models.AuthClient;
 import com.guimox.auth.repository.AuthClientRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class ClientService {
 
-    private AuthClientRepository authClientRepository;
+    private final AuthClientRepository authClientRepository;
 
     public ClientService(AuthClientRepository authClientRepository) {
         this.authClientRepository = authClientRepository;
@@ -17,6 +19,10 @@ public class ClientService {
     public ClientResponseDto getAppNameFromCode(String appCode) {
         AuthClient authClient = authClientRepository.findById(appCode).orElseThrow(() -> new RuntimeException("Faulty app code"));
         return new ClientResponseDto(authClient.getAppName());
+    }
+
+    public List<AuthClient> getAllClients() {
+        return authClientRepository.findAll();
     }
 
 }
