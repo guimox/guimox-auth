@@ -12,6 +12,7 @@ import com.guimox.auth.models.User;
 import com.guimox.auth.repository.AuthClientRepository;
 import com.guimox.auth.repository.UserRepository;
 import io.jsonwebtoken.Claims;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.Optional;
 import java.util.Random;
 
@@ -50,9 +52,9 @@ public class AuthenticationService {
         this.authClientRepository = authClientRepository;
     }
 
-    public URI getRedirectUri(String token, boolean success, String errorMessage) {
+    public URI getRedirectUriByToken(String token, boolean success, String errorMessage) {
         String appCode = jwtUtils.extractApp(token);
-        AuthClient client = authClientRepository.findById(appCode).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + appCode));
+        AuthClient client = authClientRepository.findByAppName(appCode).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + appCode));
 
         String baseUri = client.getRedirectUri();
 
@@ -64,26 +66,68 @@ public class AuthenticationService {
         }
     }
 
+    public URI getRedirectLogin(String appCode) {
+        AuthClient client = authClientRepository.findByAppName(appCode).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + appCode));
+
+        String baseUri = client.getRedirectUri();
+
+        if (!baseUri.isEmpty()) {
+            return URI.create(baseUri + "?status=success");
+        } else {
+            String encodedMessage = URLEncoder.encode("error", StandardCharsets.UTF_8);
+            return URI.create(baseUri + "?status=error&message=" + encodedMessage);
+        }
+    }
+
+    @Transactional
     public SignupResponseDto signup(RegisterUserRequestDto input) {
         String generatedRegisterCode = generateVerificationCode();
+        boolean userExists = false;
 
-        User user = new User.Builder()
-                .email(input.getEmail())
-                .password(passwordEncoder.encode(input.getPassword()))
-                .enabled(false)
-                .build();
+        String encodedPassword = passwordEncoder.encode(input.getPassword());
+        String verificationToken = null;
 
-        String verificationToken = jwtUtils.generateTokenSignup(input.getApp(), user, generatedRegisterCode);
+        Optional<User> existingUser = userRepository.findByEmail(input.getEmail());
 
-        try {
-            sendVerificationEmail(user.getEmail(), verificationToken, input.getApp());
-        } catch (RuntimeException e) {
-            throw new RuntimeException(e);
+        if (existingUser.isPresent()) {
+            userExists = true;
+            verificationToken = jwtUtils.generateTokenSignup(input.getApp(), existingUser.get(), generatedRegisterCode);
+        } else {
+            User user = new User.Builder()
+                    .email(input.getEmail())
+                    .password(encodedPassword)
+                    .enabled(false)
+                    .build();
+
+            verificationToken = jwtUtils.generateTokenSignup(input.getApp(), user, generatedRegisterCode);
+            userRepository.save(user);
         }
 
-        User savedUser = userRepository.save(user);
+        try {
+            if (!userExists) {
+                sendVerificationEmail(input.getEmail(), verificationToken, input.getApp());
+            } else {
+                handleExistingUserSignup(input.getEmail(), existingUser.get(), input.getApp());
+            }
 
-        return new SignupResponseDto("Verification email sent", savedUser.getEmail());
+            Thread.sleep(50 + new SecureRandom().nextInt(150));
+
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Process interrupted", e);
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Failed to process signup request", e);
+        }
+
+        return new SignupResponseDto("Verification email sent", input.getEmail());
+    }
+
+    private void handleExistingUserSignup(String email, User existingUser, String app) {
+        if (!existingUser.isEnabled()) {
+            String newCode = generateVerificationCode();
+            String newToken = jwtUtils.generateTokenSignup(app, existingUser, newCode);
+            sendVerificationEmail(email, newToken, app);
+        }
     }
 
 
@@ -155,23 +199,44 @@ public class AuthenticationService {
     }
 
     private void sendVerificationEmail(String userEmail, String token, String appCode) {
-        String subject = "Account Verification";
+        String subject = appCode + " - Account Verification";
 
         String verificationLink = buildVerificationLink(token, appCode);
 
-        String htmlMessage = "<html>" + "<body style=\"font-family: Arial, sans-serif; max-width: 450px;\">" + "<div style=\"background-color: #f5f5f5; padding: 20px;\">" + "<h2 style=\"color: #333;\">Welcome to our app!</h2>" + "<p style=\"font-size: 16px;\">Please click the link below to verify your account:</p>" + "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1);\">" + "<a href=\"" + verificationLink + "\" " + "style=\"display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; " + "text-decoration: none; border-radius: 5px; font-weight: bold;\">Verify Account</a>" + "</div>" + "<p style=\"font-size: 12px; color: #999; margin-top: 20px;\">" + "This link will expire in 24 hours. If you didn't request this verification, please ignore this email.</p>" + "</div>" + "</body>" + "</html>";
+        String htmlMessage =
+                "<html>" +
+                        "<body style=\"font-family: Arial, sans-serif; max-width: 450px; margin: auto;\">" +
+                        "<div style=\"background-color: #f5f5f5; padding: 20px;\">" +
+                        "<h2 style=\"color: #333; margin-bottom: 16px;\">Welcome to " + appCode + "</h2>" +
+                        "<p style=\"font-size: 15px; color: #555; line-height: 1.5;\">" +
+                        "Thank you for registering with <strong>" + appCode + "</strong>. " +
+                        "To complete your account setup, please verify your email address by clicking the button below:" +
+                        "</p>" +
+                        "<div style=\"background-color: #fff; padding: 20px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); text-align: center;\">" +
+                        "<a href=\"" + verificationLink + "\" " +
+                        "style=\"display: inline-block; padding: 12px 24px; background-color: #000000; color: white; " +
+                        "text-decoration: none; border-radius: 5px; font-weight: bold;\">" +
+                        "Verify Account" +
+                        "</a>" +
+                        "</div>" +
+                        "<p style=\"font-size: 12px; color: #999; margin-top: 20px;\">" +
+                        "This link will expire in 24 hours. If you did not request this verification, please disregard this email." +
+                        "</p>" +
+                        "</div>" +
+                        "</body>" +
+                        "</html>";
 
         resendEmailClient.sendVerificationEmail(userEmail, subject, htmlMessage);
     }
+
 
     private String buildVerificationLink(String token, String appCode) {
         try {
             String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
             String baseUrl = getBaseUrl(appCode);
 
-            boolean appCodeExists = authClientRepository.existsById(appCode);
+            boolean appCodeExists = authClientRepository.existsByAppName(appCode);
             if (!appCodeExists) throw new RuntimeException("Failed to build verification link");
-
 
             return String.format("%s/auth/verify?token=%s", baseUrl, encodedToken);
         } catch (Exception e) {

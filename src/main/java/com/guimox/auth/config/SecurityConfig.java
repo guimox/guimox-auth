@@ -42,6 +42,7 @@
                             .requestMatchers("/favicon.ico").permitAll()
                             .requestMatchers("/auth/verify").permitAll()
                             .requestMatchers("/auth/signup").permitAll()
+                            .requestMatchers("/auth/login").permitAll()
                             .anyRequest().authenticated()
                     )
                     .sessionManagement(session -> session

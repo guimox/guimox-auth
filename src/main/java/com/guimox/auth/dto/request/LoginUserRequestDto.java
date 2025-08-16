@@ -3,6 +3,11 @@ package com.guimox.auth.dto.request;
 public class LoginUserRequestDto {
     private String email;
     private String password;
+    private String app;
+
+    public String getApp() {
+        return app;
+    }
 
     public String getEmail() {
         return email;

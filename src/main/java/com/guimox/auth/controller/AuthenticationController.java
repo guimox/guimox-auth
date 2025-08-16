@@ -9,14 +9,14 @@ import com.guimox.auth.dto.response.LoginResponse;
 import com.guimox.auth.dto.response.TokenRefreshResponse;
 import com.guimox.auth.service.AuthenticationService;
 import com.guimox.auth.jwt.JwtUtils;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/auth")
@@ -42,15 +42,46 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginUserRequestDto loginUserRequestDto) {
+    public ResponseEntity<Void> authenticate(@RequestBody LoginUserRequestDto loginUserRequestDto,
+                                             HttpServletResponse response) {
         User authenticatedUser = authenticationService.authenticate(loginUserRequestDto);
+        URI redirectUri = authenticationService.getRedirectLogin(loginUserRequestDto.getApp());
 
-        String accessToken = jwtUtils.generateToken(authenticatedUser);
-        String refreshToken = jwtUtils.generateRefreshToken(authenticatedUser);
+        // Instead of creating tokens now, create a temporary authorization code
+        String authCode = UUID.randomUUID().toString();
 
-        LoginResponse loginResponse = new LoginResponse(accessToken, jwtUtils.getAccessTokenExpirationTime(), refreshToken);
+        // Store the user info temporarily with the auth code (use Redis, cache, or DB)
+        // This should expire in ~10 minutes
+        authCodeService.storeAuthCode(authCode, authenticatedUser.getId(), 600); // 10 minutes
 
-        return ResponseEntity.ok(loginResponse);
+        // Redirect with auth code instead of tokens
+        String redirectUrl = UriComponentsBuilder.fromUri(redirectUri)
+                .queryParam("code", authCode)
+                .build()
+                .toString();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(URI.create(redirectUrl));
+
+        return ResponseEntity.status(HttpStatus.FOUND).headers(headers).build();
+    }
+
+    // Separate endpoint to exchange auth code for tokens
+    @PostMapping("/token")
+    public ResponseEntity<LoginResponse> exchangeAuthCode(@RequestBody AuthCodeExchangeRequest request) {
+        // Validate auth code and get user
+        User user = authCodeService.validateAndConsumeAuthCode(request.getCode());
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Now generate the actual tokens
+        String accessToken = jwtUtils.generateToken(user);
+        String refreshToken = jwtUtils.generateRefreshToken(user);
+
+        LoginResponse response = new LoginResponse(accessToken, jwtUtils.getAccessTokenExpirationTime(), refreshToken);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/verify")
@@ -59,11 +90,11 @@ public class AuthenticationController {
 
         try {
             authenticationService.verifyUser(token);
-            URI successRedirect = authenticationService.getRedirectUri(token, true, null);
+            URI successRedirect = authenticationService.getRedirectUriByToken(token, true, null);
             return ResponseEntity.status(HttpStatus.FOUND).location(successRedirect).build();
 
         } catch (RuntimeException e) {
-            URI failureRedirect = authenticationService.getRedirectUri(token, false, e.getMessage());
+            URI failureRedirect = authenticationService.getRedirectUriByToken(token, false, e.getMessage());
             return ResponseEntity.status(HttpStatus.FOUND).location(failureRedirect).build();
         }
     }

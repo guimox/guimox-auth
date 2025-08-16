@@ -9,4 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface AuthClientRepository extends JpaRepository<AuthClient, String> {
+    boolean existsByAppName(String appName);
+
+    Optional<AuthClient> findByAppName(String appName);
 }
