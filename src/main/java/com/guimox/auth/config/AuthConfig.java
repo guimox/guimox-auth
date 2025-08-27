@@ -1,6 +1,6 @@
 package com.guimox.auth.config;
 
-import com.guimox.auth.service.CustomUserDetailsService;
+import com.guimox.auth.api.service.CustomUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

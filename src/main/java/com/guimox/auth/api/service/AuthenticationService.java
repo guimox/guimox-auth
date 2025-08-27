@@ -1,4 +1,4 @@
-package com.guimox.auth.service;
+package com.guimox.auth.api.service;
 
 import com.guimox.auth.config.OAuth2Config;
 import com.guimox.auth.dto.oauth2.GoogleUser;
@@ -9,8 +9,8 @@ import com.guimox.auth.email.ResendEmailClient;
 import com.guimox.auth.jwt.JwtUtils;
 import com.guimox.auth.models.AuthClient;
 import com.guimox.auth.models.User;
-import com.guimox.auth.repository.AuthClientRepository;
-import com.guimox.auth.repository.UserRepository;
+import com.guimox.auth.api.repository.AuthClientRepository;
+import com.guimox.auth.api.repository.UserRepository;
 import io.jsonwebtoken.Claims;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,6 +1,6 @@
-package com.guimox.auth.service;
+package com.guimox.auth.api.service;
 
-import com.guimox.auth.repository.UserRepository;
+import com.guimox.auth.api.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

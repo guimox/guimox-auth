@@ -1,4 +1,4 @@
-package com.guimox.auth.repository;
+package com.guimox.auth.api.repository;
 
 import com.guimox.auth.models.User;
 import org.springframework.data.jpa.repository.JpaRepository;

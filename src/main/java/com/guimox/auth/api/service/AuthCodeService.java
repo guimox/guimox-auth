@@ -1,7 +1,7 @@
-package com.guimox.auth.service;
+package com.guimox.auth.api.service;
 
 import com.guimox.auth.models.User;
-import com.guimox.auth.repository.UserRepository;
+import com.guimox.auth.api.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;

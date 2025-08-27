@@ -1,4 +1,4 @@
-package com.guimox.auth.repository;
+package com.guimox.auth.api.repository;
 
 import com.guimox.auth.models.AuthClient;
 import com.guimox.auth.models.User;

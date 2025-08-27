@@ -1,6 +1,6 @@
 package com.guimox.auth.jwt;
 
-import com.guimox.auth.service.CustomUserDetailsService;
+import com.guimox.auth.api.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -1,4 +1,4 @@
-package com.guimox.auth.controller;
+package com.guimox.auth.api.controller;
 
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RefreshTokenRequestDto;
@@ -7,9 +7,8 @@ import com.guimox.auth.dto.response.SignupResponseDto;
 import com.guimox.auth.models.User;
 import com.guimox.auth.dto.response.LoginResponse;
 import com.guimox.auth.dto.response.TokenRefreshResponse;
-import com.guimox.auth.service.AuthenticationService;
+import com.guimox.auth.api.service.AuthenticationService;
 import com.guimox.auth.jwt.JwtUtils;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;

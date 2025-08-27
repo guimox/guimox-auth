@@ -1,8 +1,8 @@
-package com.guimox.auth.service;
+package com.guimox.auth.api.service;
 
 import com.guimox.auth.dto.response.ClientResponseDto;
 import com.guimox.auth.models.AuthClient;
-import com.guimox.auth.repository.AuthClientRepository;
+import com.guimox.auth.api.repository.AuthClientRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
