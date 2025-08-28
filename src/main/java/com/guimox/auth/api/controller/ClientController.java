@@ -1,7 +1,7 @@
 package com.guimox.auth.api.controller;
 
 import com.guimox.auth.dto.response.ClientResponseDto;
-import com.guimox.auth.models.AuthClient;
+import com.guimox.auth.models.Apps;
 import com.guimox.auth.api.service.ClientService;
 import com.guimox.auth.utils.ClientIdGenerator;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +28,7 @@ public class ClientController {
     }
 
     @GetMapping("/apps")
-    public ResponseEntity<List<AuthClient>> getAllClients() {
+    public ResponseEntity<List<Apps>> getAllClients() {
         return ResponseEntity.ok(clientService.getAllClients());
     }
 

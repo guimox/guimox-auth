@@ -7,7 +7,7 @@ import com.guimox.auth.dto.request.RegisterUserRequestDto;
 import com.guimox.auth.dto.response.SignupResponseDto;
 import com.guimox.auth.email.ResendEmailClient;
 import com.guimox.auth.jwt.JwtUtils;
-import com.guimox.auth.models.AuthClient;
+import com.guimox.auth.models.Apps;
 import com.guimox.auth.models.User;
 import com.guimox.auth.api.repository.AuthClientRepository;
 import com.guimox.auth.api.repository.UserRepository;
@@ -54,7 +54,7 @@ public class AuthenticationService {
 
     public URI getRedirectUriByToken(String token, boolean success, String errorMessage) {
         String appCode = jwtUtils.extractApp(token);
-        AuthClient client = authClientRepository.findByAppName(appCode).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + appCode));
+        Apps client = authClientRepository.findByAppName(appCode).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + appCode));
 
         String baseUri = client.getRedirectUri();
 
@@ -67,9 +67,11 @@ public class AuthenticationService {
     }
 
     public URI getRedirectLogin(String appCode) {
-        AuthClient client = authClientRepository.findByAppName(appCode).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + appCode));
+        Apps client = authClientRepository.findByAppName(appCode).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + appCode));
 
         String baseUri = client.getRedirectUri();
+
+        System.out.println("TRYING REDIRECT URI " + baseUri);
 
         if (!baseUri.isEmpty()) {
             return URI.create(baseUri + "?status=success");

@@ -27,7 +27,7 @@ spring:
               - profile
 app:
   jwt:
-    secret: jwt-secret
+    secret: 6uM0bVPHG+EdXf95OQrmU8M9Tx43PGn6V9fAxH1bTdzSCgdQdC4R4ZDRqxGT4U5f
     access-token-expiration-ms: 86400000  # 24 hours
     refresh-token-expiration-ms: 86400000  # 24 hours
     token-version-header: X-Token-Version

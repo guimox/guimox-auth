@@ -1,5 +1,7 @@
 package com.guimox.auth.api.controller;
 
+import com.guimox.auth.api.service.AuthCodeService;
+import com.guimox.auth.dto.request.AuthCodeExchangeRequest;
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RefreshTokenRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
@@ -14,18 +16,22 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthenticationController {
     private final JwtUtils jwtUtils;
     private final AuthenticationService authenticationService;
+    private final AuthCodeService authCodeService;
 
-    public AuthenticationController(JwtUtils jwtUtils, AuthenticationService authenticationService) {
+    public AuthenticationController(JwtUtils jwtUtils, AuthenticationService authenticationService, AuthCodeService authCodeService) {
         this.jwtUtils = jwtUtils;
         this.authenticationService = authenticationService;
+        this.authCodeService = authCodeService;
     }
 
     @GetMapping("/grantcode")
@@ -61,6 +67,8 @@ public class AuthenticationController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setLocation(URI.create(redirectUrl));
+
+        System.out.println("TESTING REDIRECT HERE " + redirectUrl);
 
         return ResponseEntity.status(HttpStatus.FOUND).headers(headers).build();
     }

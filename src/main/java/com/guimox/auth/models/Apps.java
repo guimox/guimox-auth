@@ -6,8 +6,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "clients")
-public class AuthClient {
+@Table(name = "apps")
+public class Apps {
 
     @Id
     private String clientId;
