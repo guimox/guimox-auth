@@ -83,26 +83,20 @@ jobs:
             DB_NAME=${{ secrets.DB_NAME }}
             DB_USER=${{ secrets.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            DB_PORT=${{ secrets.DB_PORT }}
             DB_URL=${{ secrets.DB_URL }}
             
-            # Redis Configuration
             REDIS_PORT=${{ secrets.REDIS_PORT }}
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
             
-            # Application Configuration
             APP_PORT=${{ secrets.APP_PORT }}
             
-            # Authentication Secrets
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             
-            # Email Configuration
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
             RESEND_EMAIL=${{ secrets.RESEND_EMAIL }}
             
-            # Docker Configuration
             DOCKER_CONTAINER_NAME=${{ secrets.DOCKER_CONTAINER_NAME }}
             GITHUB_REPOSITORY=${{ github.repository }}
             EOF
