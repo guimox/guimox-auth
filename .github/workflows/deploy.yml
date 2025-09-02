@@ -84,19 +84,14 @@ jobs:
             DB_USER=${{ secrets.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
             DB_URL=${{ secrets.DB_URL }}
-            
             REDIS_PORT=${{ secrets.REDIS_PORT }}
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
-            
             APP_PORT=${{ secrets.APP_PORT }}
-            
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
-            
             RESEND_API_KEY=${{ secrets.RESEND_API_KEY }}
             RESEND_EMAIL=${{ secrets.RESEND_EMAIL }}
-            
             DOCKER_CONTAINER_NAME=${{ secrets.DOCKER_CONTAINER_NAME }}
             GITHUB_REPOSITORY=${{ github.repository }}
             EOF
