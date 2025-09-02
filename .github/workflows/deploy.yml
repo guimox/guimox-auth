@@ -79,7 +79,6 @@ jobs:
           script: |
             cd /home/${{ secrets.VPS_USERNAME }}/apps/guimox-auth
             cat > .env << EOF
-            # Database Configuration
             DB_NAME=${{ secrets.DB_NAME }}
             DB_USER=${{ secrets.DB_USER }}
             DB_PASSWORD=${{ secrets.DB_PASSWORD }}
