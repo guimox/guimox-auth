@@ -59,6 +59,7 @@
             configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:4321", "http://localhost:8080"));
             configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
             configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+            configuration.setAllowCredentials(true);
 
             UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
             source.registerCorsConfiguration("/**", configuration);

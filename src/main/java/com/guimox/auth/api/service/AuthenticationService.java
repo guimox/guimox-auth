@@ -36,7 +36,7 @@ public class AuthenticationService {
     private final JwtUtils jwtUtils;
     private final AuthClientRepository authClientRepository;
 
-    @Value("${spring.profiles.active:default}")
+    @Value("${.profiles.active:default}")
     private String activeProfile;
 
     @Value("${server.port}")
@@ -70,8 +70,6 @@ public class AuthenticationService {
         Apps client = authClientRepository.findByAppName(appCode).orElseThrow(() -> new IllegalArgumentException("Unknown client_id: " + appCode));
 
         String baseUri = client.getRedirectUri();
-
-        System.out.println("TRYING REDIRECT URI " + baseUri);
 
         if (!baseUri.isEmpty()) {
             return URI.create(baseUri + "?status=success");
@@ -131,7 +129,6 @@ public class AuthenticationService {
             sendVerificationEmail(email, newToken, app);
         }
     }
-
 
     public User authenticate(LoginUserRequestDto input) {
         User user = userRepository.findByEmail(input.getEmail()).orElseThrow(() -> new RuntimeException("User not found"));

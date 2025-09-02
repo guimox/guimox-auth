@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -47,43 +49,45 @@ public class AuthenticationController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Void> authenticate(@RequestBody LoginUserRequestDto loginUserRequestDto,
-                                             HttpServletResponse response) {
-        User authenticatedUser = authenticationService.authenticate(loginUserRequestDto);
-        URI redirectUri = authenticationService.getRedirectLogin(loginUserRequestDto.getApp());
+    public ResponseEntity<?> authenticate(@RequestBody LoginUserRequestDto loginUserRequestDto,
+                                          HttpServletResponse response) {
+        try {
+            User authenticatedUser = authenticationService.authenticate(loginUserRequestDto);
+            URI redirectUri = authenticationService.getRedirectLogin(loginUserRequestDto.getApp());
 
-        // Instead of creating tokens now, create a temporary authorization code
-        String authCode = UUID.randomUUID().toString();
+            String authCode = UUID.randomUUID().toString();
+            authCodeService.storeAuthCode(authCode, authenticatedUser.getId(), 600);
 
-        // Store the user info temporarily with the auth code (use Redis, cache, or DB)
-        // This should expire in ~10 minutes
-        authCodeService.storeAuthCode(authCode, authenticatedUser.getId(), 600); // 10 minutes
+            String redirectUrl = UriComponentsBuilder.fromUri(redirectUri)
+                    .queryParam("status", "success")
+                    .queryParam("code", authCode)
+                    .build()
+                    .toString();
 
-        // Redirect with auth code instead of tokens
-        String redirectUrl = UriComponentsBuilder.fromUri(redirectUri)
-                .queryParam("code", authCode)
-                .build()
-                .toString();
+            Map<String, Object> jsonResponse = new HashMap<>();
+            jsonResponse.put("success", true);
+            jsonResponse.put("redirectUrl", redirectUrl);
+            jsonResponse.put("message", "Authentication successful");
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(URI.create(redirectUrl));
+            return ResponseEntity.ok(jsonResponse);
 
-        System.out.println("TESTING REDIRECT HERE " + redirectUrl);
+        } catch (Exception e) {
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "Invalid credentials");
 
-        return ResponseEntity.status(HttpStatus.FOUND).headers(headers).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+        }
     }
 
-    // Separate endpoint to exchange auth code for tokens
     @PostMapping("/token")
     public ResponseEntity<LoginResponse> exchangeAuthCode(@RequestBody AuthCodeExchangeRequest request) {
-        // Validate auth code and get user
         User user = authCodeService.validateAndConsumeAuthCode(request.getCode());
 
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // Now generate the actual tokens
         String accessToken = jwtUtils.generateToken(user);
         String refreshToken = jwtUtils.generateRefreshToken(user);
 
