@@ -3,7 +3,7 @@ services:
     image: postgres:15
     container_name: auth_service_db
     environment:
-      POSTGRES_DB: jdbc:postgresql://postgres:5432/${DB_NAME}
+      POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
