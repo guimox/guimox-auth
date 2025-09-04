@@ -3,7 +3,7 @@ name: Build and Deploy Spring API
 on:
   push:
     branches:
-      - trying-cicd
+      - main
 
 jobs:
   build-deploy:
