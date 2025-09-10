@@ -1,10 +1,11 @@
 services:
   postgres:
     image: postgres:15
+    platform: linux/arm64
     container_name: auth_service_db
     environment:
       POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: postgres
+      POSTGRES_USER: guimox
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - "5433:5432"
@@ -29,6 +30,10 @@ services:
     container_name: ${DOCKER_CONTAINER_NAME}
     environment:
       - DB_URL=${DB_URL}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - APP_PORT=${APP_PORT}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - JWT_SECRET=${JWT_SECRET}
