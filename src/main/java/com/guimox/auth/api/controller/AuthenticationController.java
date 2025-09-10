@@ -12,6 +12,7 @@ import com.guimox.auth.dto.response.TokenRefreshResponse;
 import com.guimox.auth.api.service.AuthenticationService;
 import com.guimox.auth.jwt.JwtUtils;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,18 +37,13 @@ public class AuthenticationController {
         this.authCodeService = authCodeService;
     }
 
-    @GetMapping("/grantcode")
-    public String grantCode(@RequestParam("code") String code, @RequestParam("scope") String scope, @RequestParam("authuser") String authUser, @RequestParam("prompt") String prompt, @RequestParam String state) {
-        String appCode = state.split(":")[1]; //
-        return authenticationService.processGrantCode(code, appCode);
-    }
-
     @PostMapping("/signup")
     public ResponseEntity<SignupResponseDto> register(@RequestBody RegisterUserRequestDto registerUserRequestDto) {
         SignupResponseDto registeredUser = authenticationService.signup(registerUserRequestDto);
         return ResponseEntity.ok(registeredUser);
     }
 
+    @Transactional
     @PostMapping("/login")
     public ResponseEntity<?> authenticate(@RequestBody LoginUserRequestDto loginUserRequestDto,
                                           HttpServletResponse response) {
@@ -108,6 +104,12 @@ public class AuthenticationController {
             URI failureRedirect = authenticationService.getRedirectUriByToken(token, false, e.getMessage());
             return ResponseEntity.status(HttpStatus.FOUND).location(failureRedirect).build();
         }
+    }
+
+    @GetMapping("/grantcode")
+    public String grantCode(@RequestParam("code") String code, @RequestParam("scope") String scope, @RequestParam("authuser") String authUser, @RequestParam("prompt") String prompt, @RequestParam String state) {
+        String appCode = state.split(":")[1]; //
+        return authenticationService.processGrantCode(code, appCode);
     }
 
     @PostMapping("/resend")

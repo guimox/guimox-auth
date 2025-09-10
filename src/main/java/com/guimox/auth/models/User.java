@@ -23,7 +23,7 @@ public class User implements UserDetails {
     private String password;
 
     @Column(name = "last_login")
-    private LocalDateTime lastActivity;
+    private LocalDateTime lastLogin;
 
     @Column(name = "enabled")
     private boolean enabled;
@@ -46,6 +46,10 @@ public class User implements UserDetails {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public void setLastLogin(LocalDateTime lastLogin) {
+        this.lastLogin = lastLogin;
     }
 
     @Override
@@ -110,4 +114,6 @@ public class User implements UserDetails {
             return new User(this);
         }
     }
+
+
 }

@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.Random;
 
@@ -136,6 +137,10 @@ public class AuthenticationService {
         if (!user.isEnabled()) {
             throw new RuntimeException("Account not verified. Please verify your account.");
         }
+
+        user.setLastLogin(LocalDateTime.now());
+        userRepository.save(user);
+
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(input.getEmail(), input.getPassword()));
 
         return user;
@@ -232,7 +237,7 @@ public class AuthenticationService {
     private String buildVerificationLink(String token, String appCode) {
         try {
             String encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8);
-            String baseUrl = getBaseUrl(appCode);
+            String baseUrl = getBaseUrl();
 
             boolean appCodeExists = authClientRepository.existsByAppName(appCode);
             if (!appCodeExists) throw new RuntimeException("Failed to build verification link");
@@ -243,7 +248,7 @@ public class AuthenticationService {
         }
     }
 
-    private String getBaseUrl(String appCode) {
+    private String getBaseUrl() {
         if ("hlg".equalsIgnoreCase(activeProfile) || "dev".equalsIgnoreCase(activeProfile)) {
             return "http://localhost:" + serverPort;
         } else {
@@ -252,7 +257,7 @@ public class AuthenticationService {
     }
 
     public User findUserByEmail(String email) {
-        return userRepository.findByEmail(email).orElse(null); // Return null if not found, controller will handle this
+        return userRepository.findByEmail(email).orElse(null);
     }
 
     private String generateVerificationCode() {
