@@ -1,7 +1,6 @@
 package com.guimox.auth.api.controller;
 
 import com.guimox.auth.api.service.AuthCodeService;
-import com.guimox.auth.dto.request.AuthCodeExchangeRequest;
 import com.guimox.auth.dto.request.LoginUserRequestDto;
 import com.guimox.auth.dto.request.RefreshTokenRequestDto;
 import com.guimox.auth.dto.request.RegisterUserRequestDto;
@@ -11,15 +10,18 @@ import com.guimox.auth.dto.response.LoginResponse;
 import com.guimox.auth.dto.response.TokenRefreshResponse;
 import com.guimox.auth.api.service.AuthenticationService;
 import com.guimox.auth.jwt.JwtUtils;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -76,9 +78,11 @@ public class AuthenticationController {
         }
     }
 
-    @PostMapping("/token")
-    public ResponseEntity<LoginResponse> exchangeAuthCode(@RequestBody AuthCodeExchangeRequest request) {
-        User user = authCodeService.validateAndConsumeAuthCode(request.getCode());
+    @GetMapping("/token")
+    public ResponseEntity<LoginResponse> exchangeAuthCode(
+            @RequestParam("code") String request) {
+
+        User user = authCodeService.validateAndConsumeAuthCode(request);
 
         if (user == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -87,8 +91,23 @@ public class AuthenticationController {
         String accessToken = jwtUtils.generateToken(user);
         String refreshToken = jwtUtils.generateRefreshToken(user);
 
-        LoginResponse response = new LoginResponse(accessToken, jwtUtils.getAccessTokenExpirationTime(), refreshToken);
-        return ResponseEntity.ok(response);
+        ResponseCookie cookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(true)
+                .path("/")
+                .maxAge(Duration.ofDays(7))
+                .sameSite("None")
+                .build();
+
+        LoginResponse loginResponse = new LoginResponse(
+                accessToken,
+                jwtUtils.getAccessTokenExpirationTime(),
+                null
+        );
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .body(loginResponse);
     }
 
     @GetMapping("/verify")
