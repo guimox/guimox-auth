@@ -25,7 +25,7 @@ app:
     api-key: ${RESEND_API_KEY}
     from-email: ${RESEND_EMAIL}
 server:
-  port: 8087
+  port: 8080
 security:
   filter-dispatch-types: REQUEST
 logging:
